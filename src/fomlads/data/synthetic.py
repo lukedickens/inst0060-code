@@ -45,3 +45,14 @@ def sample_1d_regression_data(
     return inputs, targets
 
 
+def sample_2d_isotropic_gaussian(num_points, mux=3, sigma2x=25, muy=0, sigma2y=4):
+    """
+    Creates a (num_points x 2) array of random variables. Each column
+    is a vector of values independently sampled from a normal distribution.
+    """
+    xsamples = np.random.normal(mux,np.sqrt(sigma2x),(num_points,1))
+    ysamples = np.random.normal(muy,np.sqrt(sigma2y),(num_points,1))
+    synthetic_data = np.hstack((xsamples, ysamples))
+    return synthetic_data
+
+
