@@ -125,7 +125,15 @@ def calculate_kmeans_loss(datamtx, centres, cluster_assignments):
     """
     N, D = datamtx.shape
     loss = 0.
-    # TODO: you should complete this function to calculate J
+    for cluster_id in np.unique(cluster_assignments):
+        # identify which points belong to this cluster
+        assigned_to_this_cluster = (cluster_assignments == cluster_id)
+        # get the centre as a 1xD matrix
+        centre = centres[cluster_id,:].reshape((1,D))
+        clustermtx = datamtx[assigned_to_this_cluster, :]
+        #
+        individual_distances = squared_euclidean_distance(clustermtx, centre)
+        loss += np.sum(individual_distances)
     return loss
 
 
@@ -184,8 +192,9 @@ def kmedoids_e_step(proxmtx, medoids):
     cluster_assignments - a vector of N integers 0..(K-1), one per data-point,
         assigning that data-point to a cluster
     """
-    cluster_assignments = None
-    # TODO: you should complete this function
+    # each row is that data-points distance to each of the medoids
+    distances_to_medoids = proxmtx[:,medoids]
+    cluster_assignments = np.argmin(distances_to_medoids, axis=1)
     return cluster_assignments
 
 def kmedoids_m_step(proxmtx, medoids, cluster_assignments):
@@ -195,7 +204,7 @@ def kmedoids_m_step(proxmtx, medoids, cluster_assignments):
     parameters
     ----------
     datamtx - (NxD) data matrix (array-like)
-    centres - (KxD) matrix of cluster centres
+    medoids - (K) vector of cluster centroid ids
     cluster_assignments - a vector of N integers 0..(K-1), one per data-point,
         assigning that data-point to a cluster
 
@@ -205,9 +214,55 @@ def kmedoids_m_step(proxmtx, medoids, cluster_assignments):
     total_loss - the new total loss of the clustering
     """
     total_loss = 0.
-    # TODO: you should complete this function
+    for k, medoid in enumerate(medoids):
+        # points assigned to this cluster
+        cluster_points = (cluster_assignments == k)
+        # the indices where cluster_points is true are the indices of this
+        # cluster's points
+        cluster_ids = np.where(cluster_points)[0]
+        # first filter rows then filter columns to keep only proximities within
+        # this cluster
+        cluster_proxmtx = proxmtx[cluster_points, :]
+        cluster_proxmtx = cluster_proxmtx[:, cluster_points]
+        # the cluster loss  for each cluster point
+        cluster_losses = np.sum(cluster_proxmtx, axis=1)
+        # the new medoid is the id of the point in this cluster with the
+        # smallest cluster loss
+        index_of_min_loss = np.argmin(cluster_losses)
+        cluster_loss = cluster_losses[index_of_min_loss]
+        new_medoid = cluster_ids[index_of_min_loss]
+        # add cluster loss to the total
+        total_loss += cluster_loss
+        medoids[k] = new_medoid
     return medoids, total_loss
 
+def calculate_kmedoids_loss(proxmtx, medoids, cluster_assignments):
+    """
+    Evaluates the loss function J for kmeans
+
+    parameters
+    ----------
+    proxmtx - (NxD) data matrix (array-like)
+    medoids - (KxD) matrix of cluster centres
+    cluster_assignments - a vector of N integers 0..(K-1), one per data-point,
+        assigning that data-point to a cluster
+
+    returns
+    -------
+    loss - numeric value of the loss function J
+    """
+    N = proxmtx.shape[0]
+    loss = 0.
+    for cluster_id in np.unique(cluster_assignments):
+        medoid = medoids[cluster_id]
+        # identify which points belong to this cluster
+        cluster_members = (cluster_assignments == cluster_id)
+        # get the cluster point proximities to this medoid
+        all_medoid_proximities = proxmtx[:,medoid]
+        medoid_proximities = all_medoid_proximities[cluster_members]
+        #
+        loss += np.sum(medoid_proximities)
+    return loss
 
 
 

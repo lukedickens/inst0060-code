@@ -216,5 +216,48 @@ def log_likelihood_mog(datamtx, means, covmtxs, mixcoefs):
             datamtx, meank, covmtxk)
     return np.sum(np.log(probs))
 
+def aic_mog(datamtx, means, covmtxs, mixcoefs):
+    """
+    Calculates the AIC (the Akaike's information criterion) for the mixture of
+    Gaussian's model.
+
+    parameters
+    ----------
+    datamtx - (NxD) data matrix (array-like)
+    means - (KxD) matrix of component mean estimates
+    covmtxs - (KxDxD) matrix of component covariance estimates
+    mixcoefs - K vector of mixture coefficient estimates
+  
+    returns
+    -------
+    aic - Akaike's information criterion
+    """
+    N, D = datamtx.shape
+    K = means.shape[0]
+    log_L = log_likelihood_mog(datamtx, means, covmtxs, mixcoefs)
+    num_params = K*(D**2 + D)/2. + K - 1
+    return 2* num_params - 2 *log_L
+
+def bic_mog(datamtx, means, covmtxs, mixcoefs):
+    """
+    Calculates the BIC (the Bayesian information criterion) for the mixture of
+    Gaussian's model.
+
+    parameters
+    ----------
+    datamtx - (NxD) data matrix (array-like)
+    means - (KxD) matrix of component mean estimates
+    covmtxs - (KxDxD) matrix of component covariance estimates
+    mixcoefs - K vector of mixture coefficient estimates
+  
+    returns
+    -------
+    bic - Bayesian information criterion
+    """
+    N, D = datamtx.shape
+    K = means.shape[0]
+    log_L = log_likelihood_mog(datamtx, means, covmtxs, mixcoefs)
+    num_params = K*(D**2 + D)/2. + K - 1
+    return num_params*(np.log(N) - np.log(2*np.pi)) - 2 *log_L
 
 
