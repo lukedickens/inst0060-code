@@ -1,22 +1,19 @@
-"""
-Provided code version for tutorial 04
-"""
 import numpy as np
 
 def max_lik_1d_gaussian(samples):
     """
     parameters
     ----------
-      samples - a 1d array of samples
+      samples - a vector of samples
     returns
     -------
       mu_ml - a maximum likelihood estimate of the mean
       sigma2_ml - a maximum likelihood estimate of the variance
     """
-    # TODO: edit this function to calcualte the maximum likelihood parameters
-    mu_ML = 0
-    sigma2_ML = 0
-    return mu_ML, sigma2_ML
+    N = samples.size
+    mu_ml = np.sum(samples)/N
+    sigma2_ml = np.sum((samples-mu_ml)**2)/N
+    return mu_ml, sigma2_ml
 
 
 def posterior_1d_gaussian(N, m_0, s2_0, mu_ml, sigma2):
@@ -34,29 +31,7 @@ def posterior_1d_gaussian(N, m_0, s2_0, mu_ml, sigma2):
       m_N - posterior mean for data mean mu
       s2_N - posterior variance for data mean mu
     """
-    # TODO: edit this function to calcualte the posterior parameters
-    m_N = 0
-    s2_N = 0
+    m_N = (sigma2*m_0 + N*s2_0*mu_ml)/(N*s2_0 + sigma2) 
+    s2_N = 1/(1/s2_0 + N/sigma2)
     return m_N, s2_N
-
-def max_lik_mv_gaussian(data):
-    """
-    Finds the maximum likelihood mean and covariance matrix for gaussian data
-    samples (data)
-
-    parameters
-    ----------
-    data - data array, 2d array of samples, each row is assumed to be an
-      independent sample from a multi-variate gaussian
-
-    returns
-    -------
-    mu - mean vector
-    Sigma - 2d array corresponding to the covariance matrix  
-    """
-    # TODO: edit this function to calculate the maximum likelihood parameters
-    N, dim = data.shape
-    mu = np.zeros(dim)
-    Sigma = np.identity(dim)
-    return mu, Sigma
 

@@ -83,3 +83,23 @@ def plot_function_data_and_approximation(
     lines.append(line)
     return fig, ax, lines
 
+def plot_2d_decision_boundary(pred_func, X, y, flush=True, fig_ax=None):
+    N, D = X.shape
+    if D != 2:
+        raise ValueError("Only works with 2d input data")
+    fig, ax = plt.subplots()
+    y = (y>0).astype(int)
+    # min and max values (with padding)
+    x1_min, x1_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+    x2_min, x2_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+    h = 0.01
+    # generate grid of points with distance h
+    xx1, xx2 = np.meshgrid(
+        np.arange(x1_min, x1_max, h), np.arange(x2_min, x2_max, h))
+    # predict function value for whole grid
+    Z = pred_func(np.c_[xx1.ravel(), xx2.ravel()])
+    Z = Z.reshape(xx1.shape)
+    # plot contour and training examples
+    ax.contourf(xx1, xx2, Z, cmap=plt.cm.Spectral)
+    ax.scatter(X[:, 0], X[:, 1], marker='.', c=y, cmap=plt.cm.Spectral)
+

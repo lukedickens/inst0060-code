@@ -38,7 +38,7 @@ def saw_function(inputs):
     return targets
 
 def prob_dens_gaussian(xs, mu, sigma2):
-    return np.zeros(xs.shape)
+    return 1/np.sqrt(2*np.pi*sigma2)*np.exp(-(xs-mu)**2/(2*sigma2))
 
 def logistic_sigmoid(a):
     """
