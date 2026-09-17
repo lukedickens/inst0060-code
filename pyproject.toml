@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fomlads"
+version = "0.1.0"
+description = "Supporting Python package for MSc course code"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "jupyter"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
