@@ -62,9 +62,11 @@ def calculate_weights_posterior(inputs, targets, beta, m0, S0):
     SN - the posterior covariance matrix 
     """
     N, K = inputs.shape
-    # TODO: You must complete this code
-    SN = None
-    mN = None
+    targets = targets.reshape((N,1))
+    m0 = m0.reshape((K,1))
+    S0_inv = np.linalg.inv(S0)
+    SN = np.linalg.inv(S0_inv + beta*inputs.T @ inputs)
+    mN = SN @ (S0_inv @ m0 + beta*inputs.T @ targets )
     return mN.flatten(), SN
 
 def predictive_distribution(inputs, beta, mN, SN):
@@ -88,9 +90,16 @@ def predictive_distribution(inputs, beta, mN, SN):
     sigma2Ns - a vector of variances, one for each input data-point 
     """
     N, K = inputs.shape
-    # TODO: you must complete this code
-    ys = None
-    sigma2Ns = None
+    mN = mN.reshape((K,1))
+    ys = inputs @ mN
+    # create an array of the right size with the uniform term
+    sigma2Ns = np.ones(N)/beta
+    for n in range(N):
+        # now calculate and add in the data dependent term
+        # NOTE: I couldn't work out a neat way of doing this without a for-loop
+        # NOTE: but if anyone can, then please share the answer.
+        phi_n = inputs[n,:].T
+        sigma2Ns[n] += phi_n.T @ SN @ phi_n
     return ys.flatten(), sigma2Ns
 
 def construct_polynomial(degree, weights):
@@ -152,10 +161,11 @@ def construct_knn_function_1d(training_inputs, targets, k):
     training_inputs = training_inputs.reshape((1,-1))
     def prediction_function(test_inputs):
         test_inputs = test_inputs.reshape((-1,1))
+        N_test = test_inputs.size
         # uses broadcasting see:
         # https://numpy.org/doc/stable/user/basics.broadcasting.html
         distances = np.abs(training_inputs - test_inputs)
-        predicts = np.empty(M)
+        predicts = np.empty(N_test)
         # each row of each_k_neighbours is the indices of the k
         # neighbours of test_input[i] in training_inputs
         each_k_neighbours = np.argpartition(distances, kth=k, axis=-1)[:,:k]
@@ -192,14 +202,14 @@ def construct_knn_function(training_inputs, targets, k, metric):
 
     returns
     -------
-    prediction_function - a function that takes 2d (M,D)-array of inputs X and 
+    prediction_function - a function that takes 2d (N_test,D)-array of inputs X and 
       outputs a 1d array of predicitons y, where y[i] is the prediction for data
       point X[i,:]
     """
     def prediction_function(test_inputs):
-        M, D = test_inputs.shape
+        N_test, D = test_inputs.shape
         distances = metric(test_inputs, training_inputs)
-        predicts = np.empty(M)
+        predicts = np.empty(N_test)
         for i, neighbourhood in enumerate(np.argpartition(distances, k)[:,:k]):
             # the neighbourhood is the indices of the closest inputs to xs[i]
             # the prediction is the mean of the targets for this neighbourhood

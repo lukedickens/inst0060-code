@@ -112,10 +112,17 @@ def shared_covariance_model_fit(inputs, targets):
     mean1 - the mean of class 1's data
     covmtx - the shared covariance matrix 
     """
-    pi = None
-    mean0 = None
-    mean1 = None
-    covmtx = None
+    if len(inputs.shape) == 1:
+        inputs = inputs.rehape(inputs.size,1)
+    N, D = inputs.shape
+    inputs0 = inputs[targets==0,:]
+    inputs1 = inputs[targets==1,:]
+    N0 = inputs0.shape[0]
+    N1 = inputs1.shape[0]
+    pi = N1/N
+    mean0, S0 = max_lik_mv_gaussian(inputs0)
+    mean1, S1 = max_lik_mv_gaussian(inputs1)
+    covmtx = (N0/N)*S0 + (N1/N)*S1
     return pi, mean0, mean1, covmtx
 
 
@@ -137,8 +144,13 @@ def shared_covariance_model_predict(inputs, pi, mean0, mean1, covmtx):
     outputs - a 1d array of predictions, one per datapoint.
         prediction labels are 1 for class 1, and 0 for class 0
     """
-    # TODO: complete this method as described on the tutorial sheet
-    return None
+    # calculate the class densities p(xn|C0) and p(xn|C1) for every data-point
+    class0_densities = stats.multivariate_normal.pdf(inputs, mean0, covmtx)    
+    class1_densities = stats.multivariate_normal.pdf(inputs, mean1, covmtx)
+    # now evaluate the posterior class probability p(C1|xn) for every data-point
+    posterior_probs = \
+        (pi*class1_densities)/(pi*class1_densities+(1-pi)*class0_densities)
+    return (posterior_probs >= 0.5).astype(int)
 
 def add_bias_column(datamtx):
     """
@@ -174,8 +186,9 @@ def logistic_regression_fit(
     targets - 1d target vector (array-like) -- can be at most 2 classes ids
         0 and 1
     weights0 [optional] - an initial set of weights for warm start.
-    termination_threshold [optional] - the threshold magnitude below 
-        which the algorithm will terminate.
+    threshold [optional] - the threshold magnitude below which the algorithm
+        will terminate.
+    
 
     returns
     -------
@@ -186,34 +199,35 @@ def logistic_regression_fit(
         inputs = inputs.reshape((inputs.size,1))
     N, D = inputs.shape
     targets = targets.reshape((N,1))
-
     # initialise the weights
     if weights0 is None:
         weights = np.random.multivariate_normal(np.zeros(D), 0.0001*np.identity(D))
     else:
         weights = weights0
     weights = weights.reshape((D,1))
-    # initial update magnitude is larger than termination_threshold
+    # initially the update magnitude is set as larger than the
+    # termination_threshold to ensure the first iteration runs
     update_magnitude = 2*termination_threshold
     while update_magnitude > termination_threshold:
         # calculate the current prediction vector for weights
-        predicts = logistic_regression_prediction_probs(inputs, weights)
+        predicts = logistic_regression_prediction_probs(
+            inputs, weights)
         # the diagonal reweighting matrix (easier with predicts as flat array)
         R = np.diag(predicts*(1-predicts))
         # reshape predicts to be same form as targets
         predicts = predicts.reshape((N,1))
-        # TODO: initially this algorithm uses a fixed step size eta to 
-        # TODO: update the weights using simple gradient ascent
-        # TODO: Calculate the Hessian inverse & use it to improve the update
-        eta = 0.01
-        new_weights = weights - eta*inputs.T @ (predicts-targets)
+        # Calculate the Hessian inverse
+        H_inv = np.linalg.inv(inputs.T @ R @ inputs)
+        # update the weights
+        new_weights = weights - H_inv @ inputs.T @ (predicts-targets)
         # calculate the update_magnitude
         update_magnitude = np.sqrt(np.sum((new_weights-weights)**2))
         # update the weights
         weights = new_weights
     return weights
 
-def logistic_regression_predict(inputs, weights):
+def logistic_regression_predict(
+      inputs, weights, decision_threshold=0.5):
     """
     Get deterministic class prediction vector from the logistic regression model.
 
@@ -221,9 +235,13 @@ def logistic_regression_predict(inputs, weights):
     ----------
     inputs - input data (or design matrix) as 2d array
     weights - a set of model weights
+    decision_threshold - the prediction probability above which the output 
+        prediction is 1. Set to 0.5 for minimum misclassification
     """
-    prediction_probs = logistic_regression_prediction_probs(inputs, weights)
-    return (prediction_probs > 0.5).astype(int)
+    N, D = inputs.shape
+    prediction_probs = logistic_regression_prediction_probs(
+        inputs, weights)
+    return (prediction_probs > decision_threshold).astype(int)
 
 def logistic_regression_prediction_probs(inputs, weights):
     """
@@ -235,7 +253,17 @@ def logistic_regression_prediction_probs(inputs, weights):
     weights - a set of model weights
     """
     N, D = inputs.shape
-    weights = np.matrix(weights).reshape((D,1))
-    inputs = np.matrix(inputs)
-    return logistic_sigmoid(np.array(inputs*weights).flatten())
+    weights = weights.reshape((-1,1))
+    return logistic_sigmoid((inputs @ weights).flatten())
 
+# some helper methods to create simple prediction functions
+def construct_logistic_regression_prob_prediction_function(
+            weights, **kwargs):
+    def prob_prediction_function(inputs):
+        return logistic_regression_prediction_probs(inputs, weights, **kwargs)
+    return prob_prediction_function
+      
+def construct_logistic_regression_prediction_function(weights, **kwargs):
+    def prediction_function(inputs):
+        return logistic_regression_predict(inputs, weights, **kwargs)
+    return prediction_function
