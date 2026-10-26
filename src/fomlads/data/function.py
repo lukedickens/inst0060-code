@@ -37,9 +37,6 @@ def saw_function(inputs):
     targets[inputs>=0.5] = inputs[inputs>=0.5]-1
     return targets
 
-def prob_dens_gaussian(xs, mu, sigma2):
-    return np.zeros(xs.shape)
-
 def logistic_sigmoid(a):
     """
     Calculates the logistic sigmoid for an individual value or collection of 
