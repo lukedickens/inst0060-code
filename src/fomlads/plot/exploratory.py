@@ -19,10 +19,11 @@ def plot_2d_data_and_approximating_gaussian(
     mu -- mean of approximating gaussian (1d array)
     Sigma -- covariance matrix of approximating gaussian (2d array) 
     """
-    dim, N = data.shape
+    N, dim = data.shape
     # create a figure object and plot the data
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
+    
     ## TODO: You must complete this function so that it extracts the first and
     ## TODO: second column of the data array and scatter plots these.
     # if a mean (mu) vector and covariance matrix (Sigma) are supplied,
